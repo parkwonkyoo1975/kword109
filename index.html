@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>아름다운 순우리말 100선 탐험대</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Pretendard 폰트 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+  <style>
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+    .badge-stamp {
+      transform: rotate(-12deg);
+    }
+    @keyframes pulse-subtle {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .animate-bounce-short {
+      animation: pulse-subtle 1.8s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-sky-50 min-h-screen text-slate-800 flex flex-col justify-between selection:bg-teal-200">
+
+  <!-- ================= 1. 상단 공통 네비게이션 헤더 ================= -->
+  <header class="bg-white/90 backdrop-blur-md border-b border-teal-100 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <!-- 홈 로고 버튼 -->
+      <button onclick="goHome()" class="flex items-center gap-2 group text-left">
+        <span class="text-2xl p-1.5 bg-teal-100 rounded-xl group-hover:bg-teal-200 transition">🌿</span>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-teal-900 leading-tight">순우리말 100선 탐험대</h1>
+          <p class="text-xs text-teal-600 hidden sm:block">국립국어원 선정 아름다운 우리말 퀴즈</p>
+        </div>
+      </button>
+
+      <!-- 상단 컨트롤 (단계 바로가기 드롭다운, 사전, 소리) -->
+      <div class="flex items-center gap-2">
+        <select id="quickStageSelect" onchange="onQuickSelectChange(this.value)" class="text-xs sm:text-sm font-semibold bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-slate-700 hover:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400 transition">
+          <option value="0">🏠 전체 단계 선택</option>
+          <option value="1">1단계 (1~20번)</option>
+          <option value="2">2단계 (21~40번)</option>
+          <option value="3">3단계 (41~60번)</option>
+          <option value="4">4단계 (61~80번)</option>
+          <option value="5">5단계 (81~100번)</option>
+        </select>
+
+        <button onclick="openDictionaryModal()" title="100선 어휘 사전 열기" class="p-2 bg-slate-100 hover:bg-teal-100 text-teal-800 rounded-lg text-sm font-medium transition flex items-center gap-1">
+          <span>📖</span>
+          <span class="hidden md:inline text-xs">단어사전</span>
+        </button>
+
+        <button id="soundToggleBtn" onclick="toggleSound()" title="소리 켜기/끄기" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm transition">
+          🔊
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= 2. 메인 컨테이너 ================= -->
+  <main class="max-w-4xl w-full mx-auto p-4 flex-1">
+
+    <!-- [화면 A: 홈 화면 (스테이지 카드 선택 및 누적 진도)] -->
+    <section id="view-home" class="space-y-6">
+      <!-- 환영 및 종합 진도 카드 -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-teal-100 text-center relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-32 h-32 bg-teal-100/60 rounded-full blur-2xl"></div>
+        <div class="inline-block bg-teal-100 text-teal-800 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-full mb-3">
+          🌱 초등 전 학년 우리말 어휘력 프로젝트
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-2">
+          반짝이는 순우리말을 찾아 떠나볼까요?
+        </h2>
+        <p class="text-sm sm:text-base text-slate-600 max-w-xl mx-auto mb-6">
+          하루에 한 단계씩 차근차근! 뜻을 읽고 알맞은 단어를 맞히며 100개의 소중한 우리말을 가슴에 담아보세요.
+        </p>
+
+        <!-- 진도 요약 바 -->
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 max-w-lg mx-auto">
+          <div class="flex justify-between items-center mb-2 text-xs sm:text-sm font-bold">
+            <span class="text-slate-700">전체 탐험 달성률</span>
+            <span id="overallProgressText" class="text-teal-600">0 / 100 단어 (0%)</span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+            <div id="overallProgressBar" class="bg-gradient-to-r from-teal-500 to-emerald-400 h-3 rounded-full transition-all duration-700 w-0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5개 대형 스테이지 카드 그리드 -->
+      <div>
+        <div class="flex items-center justify-between mb-3 px-1">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center gap-1.5">
+            <span>🎯</span> 단계 선택하기
+          </h3>
+          <span class="text-xs text-slate-500">원하는 단계를 클릭하면 퀴즈가 시작됩니다</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="stageCardContainer">
+          <!-- JS로 1~5단계 카드 렌더링 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- [화면 B: 퀴즈 진행 화면] -->
+    <section id="view-quiz" class="hidden space-y-4">
+      <!-- 퀴즈 상태 헤더 (진행도, 콤보, 점수) -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span id="quizStageBadge" class="bg-teal-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg">
+            1단계
+          </span>
+          <span id="quizCounterText" class="text-sm font-bold text-slate-700">
+            문제 1 / 20
+          </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div id="comboBadge" class="hidden bg-amber-500 text-white text-xs font-extrabold px-2.5 py-1 rounded-full animate-bounce">
+            🔥 2연속 정답!
+          </div>
+          <div class="text-sm font-bold text-teal-700 bg-teal-50 px-3 py-1 rounded-lg border border-teal-200">
+            점수: <span id="currentScoreText">0</span>점
+          </div>
+        </div>
+
+        <!-- 프로그레스 바 -->
+        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mt-1">
+          <div id="quizProgressBar" class="bg-teal-500 h-2.5 rounded-full transition-all duration-300 w-5"></div>
+        </div>
+      </div>
+
+      <!-- 문제 카드 -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 space-y-6">
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <span class="text-xs font-semibold text-teal-700 bg-teal-100 px-2.5 py-1 rounded-md">알맞은 순우리말 고르기</span>
+            <button onclick="toggleHint()" id="hintToggleBtn" class="text-xs text-amber-700 bg-amber-100 hover:bg-amber-200 font-bold px-2.5 py-1 rounded-md transition flex items-center gap-1">
+              <span>💡</span> <span id="hintBtnLabel">생각 힌트 보기</span>
+            </button>
+          </div>
+
+          <!-- 생각 힌트 상자 -->
+          <div id="hintBox" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs sm:text-sm text-amber-900 mb-4 animate-fade-in">
+            <strong class="font-bold">도우미 힌트:</strong> <span id="hintTextContent"></span>
+          </div>
+
+          <!-- 질문 텍스트 -->
+          <h3 id="questionTitle" class="text-lg sm:text-xl font-bold text-slate-900 leading-relaxed">
+            문제 로딩 중...
+          </h3>
+        </div>
+
+        <!-- 4지 선다형 보기 버튼 그리드 -->
+        <div id="optionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- 옵션 버튼이 JS로 생성됩니다 -->
+        </div>
+
+        <!-- 정답 해설 및 예문 피드백 카드 (정답 선택 후 표시) -->
+        <div id="explanationBox" class="hidden rounded-2xl p-5 border transition-all duration-300">
+          <div class="flex items-start gap-3">
+            <span id="feedbackIcon" class="text-2xl"></span>
+            <div class="flex-1">
+              <h4 id="feedbackTitle" class="text-base font-extrabold mb-1"></h4>
+              <p id="feedbackMeaning" class="text-sm font-semibold text-slate-800 mb-2"></p>
+              <div class="bg-white/80 rounded-xl p-3 border border-slate-200 text-xs sm:text-sm text-slate-700 space-y-1">
+                <div><strong class="text-teal-800">생활 속 예문:</strong> <span id="feedbackExample"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button id="nextQuestionBtn" onclick="nextQuestion()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5">
+              <span>다음 문제로</span> <span>➔</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- [화면 C: 단계 완료 결과 화면] -->
+    <section id="view-result" class="hidden">
+      <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-teal-100 text-center space-y-6 max-w-lg mx-auto relative overflow-hidden">
+        <canvas id="fireworksCanvas" class="absolute inset-0 pointer-events-none w-full h-full z-10"></canvas>
+
+        <div class="relative z-20 space-y-4">
+          <div id="resultStampBadge" class="inline-block p-4 bg-teal-50 rounded-full text-5xl">
+            🎉
+          </div>
+          <h3 id="resultTitle" class="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            탐험 완료!
+          </h3>
+          <p id="resultSubtitle" class="text-sm text-slate-600">
+            우리말의 고운 빛깔을 훌륭하게 익혔습니다.
+          </p>
+
+          <!-- 점수 판 -->
+          <div class="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-2xl p-5 border border-teal-200">
+            <div class="text-xs text-teal-800 font-bold mb-1">최종 획득 점수</div>
+            <div class="text-4xl font-black text-teal-600 mb-2">
+              <span id="finalScoreVal">0</span> / 100점
+            </div>
+            <p id="finalFeedbackMessage" class="text-xs sm:text-sm font-medium text-slate-700"></p>
+          </div>
+
+          <!-- 버튼 컨트롤 액션 -->
+          <div class="flex flex-col gap-2.5 pt-2">
+            <button id="retryIncorrectBtn" onclick="retryIncorrectOnly()" class="hidden w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">
+              📝 틀린 문제만 다시 풀기
+            </button>
+            <button onclick="retryCurrentStage()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-4 rounded-xl shadow transition text-sm">
+              🔄 이 단계 처음부터 다시 풀기
+            </button>
+            <button onclick="goHome()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 px-4 rounded-xl transition text-sm">
+              🏠 다른 단계 선택하러 가기
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= 3. 어휘 사전 모달 ================= -->
+  <div id="dictModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 animate-fade-in">
+      <div class="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-teal-50">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📖</span>
+          <h3 class="font-extrabold text-slate-900 text-base sm:text-lg">아름다운 순우리말 100선 사전</h3>
+        </div>
+        <button onclick="closeDictionaryModal()" class="text-slate-400 hover:text-slate-700 text-2xl font-bold px-2">✕</button>
+      </div>
+
+      <div class="p-3 border-b border-slate-100 bg-slate-50 flex gap-2">
+        <input type="text" id="dictSearchInput" oninput="filterDictionary(this.value)" placeholder="궁금한 단어나 뜻을 검색해 보세요 (예: 윤슬, 강)" class="flex-1 text-sm bg-white border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400">
+      </div>
+
+      <div class="p-4 overflow-y-auto flex-1 space-y-2.5" id="dictWordList">
+        <!-- JS로 단어 목록 동적 렌더링 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 푸터 -->
+  <footer class="bg-white/80 border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+    국립국어원 표준국어대사전 및 우리말샘 검수 기반 초등 맞춤형 디지털 학습터
+  </footer>
+
+  <!-- ================= 4. 데이터 및 전체 로직 스크립트 ================= -->
+  <script>
+    /* ================= 100선 전체 문항 데이터 (20개씩 5단계) ================= */
+    const STAGE_CONFIG = [
+      { id: 1, title: "1단계: 맑은 강과 고운 결", rangeText: "1~20번 단어", start: 1, end: 20, wordsSample: "가람, 갈맷빛, 꽃비, 나래 등" },
+      { id: 2, title: "2단계: 너른 바위와 따스한 햇살", rangeText: "21~40번 단어", start: 21, end: 40, wordsSample: "너럭바위, 놀빛, 다사롭다, 마루 등" },
+      { id: 3, title: "3단계: 봄바람과 다정한 눈빛", rangeText: "41~60번 단어", start: 41, end: 60, wordsSample: "물허벅, 볼우물, 살갑다, 소담하다 등" },
+      { id: 4, title: "4단계: 반짝이는 물결과 푸른 숲", rangeText: "61~80번 단어", start: 61, end: 80, wordsSample: "숨비소리, 숫눈, 시나브로, 윤슬 등" },
+      { id: 5, title: "5단계: 포근한 품과 정다운 이야기", rangeText: "81~100번 단어", start: 81, end: 100, wordsSample: "조잘거리다, 쪽빛, 토닥토닥, 함초롬하다 등" }
+    ];
+
+    const ALL_WORDS = [
+      // 1단계 (1~20)
+      { id: 1, stage: 1, word: "가람", q: "옛날 조상들이 넓고 길게 흘러가는 '강(江)'을 부르던 아름다운 순우리말은 무엇일까요?", options: ["가람", "나루", "여우비", "은결"], ans: 0, meaning: "강(江)을 이르는 옛말", hint: "우리나라의 유구한 역사를 품고 흐르는 큰 물줄기를 상상해 보세요.", example: "낙동강과 한강처럼 크고 긴 강을 옛날에는 '가람'이라고 불렀어요." },
+      { id: 2, stage: 1, word: "가만히", q: "'움직이지 않거나 소리를 내지 않고 조용하고 잠잠하게'를 뜻하는 우리말은 무엇일까요?", options: ["살며시", "가만히", "시나브로", "진득이"], ans: 1, meaning: "움직임이나 소리가 없이 조용하게", hint: "숨을 죽이고 차분히 귀를 기울이는 모습을 떠올려 보세요.", example: "풀잎 위의 작은 나비가 놀라지 않도록 가만히 다가갔어요." },
+      { id: 3, stage: 1, word: "갈맷빛", q: "초록색 중에서도 유난히 짙고 깊은 '짙은 초록빛'을 나타내는 고운 우리말 색깔 이름은?", options: ["쪽빛", "감빛", "갈맷빛", "반물빛"], ans: 2, meaning: "짙은 초록빛", hint: "한여름 깊은 산속의 울창한 나뭇잎 색깔을 떠올려 보세요.", example: "비가 내린 뒤 숲속의 나무들이 싱그러운 갈맷빛으로 물들었습니다." },
+      { id: 4, stage: 1, word: "감돌다", q: "어떤 기운이나 은은한 향기, 옅은 빛이 주위에 가볍게 맴도는 것을 뜻하는 말은?", options: ["머물다", "감돌다", "이울다", "너울거리다"], ans: 1, meaning: "어떤 기운이나 빛, 냄새 따위가 은은하게 퍼져 맴돌다", hint: "기분 좋은 미소나 꽃향기가 얼굴이나 방 안에 퍼져 있을 때 써요.", example: "맛있는 빵 냄새가 온 교실에 향긋하게 감돌고 있었습니다." },
+      { id: 5, stage: 1, word: "감빛", q: "가을철 나뭇가지에 탐스럽게 잘 익은 과일의 붉고 노란 빛깔을 뜻하는 말은?", options: ["놀빛", "감빛", "모싯빛", "쇳빛"], ans: 1, meaning: "잘 익은 감의 붉고 노란 빛깔", hint: "가을에 따먹는 달콤하고 주황빛이 도는 감을 떠올려 보세요.", example: "저녁노을이 잘 익은 과일처럼 고운 감빛으로 하늘을 물들였어요." },
+      { id: 6, stage: 1, word: "갸륵하다", q: "행동이나 마음씨가 착하고 기특하여 마음에 큰 감동을 주는 것을 이르는 말은?", options: ["수수하다", "미덥다", "갸륵하다", "소담하다"], ans: 2, meaning: "착하고 기특하여 마음이 뭉클하다 (사전 표기: 가륵하다/갸륵하다)", hint: "어린 동생이 무거운 짐을 든 할머니를 도와드릴 때 어른들이 칭찬하는 말이에요.", example: "길 잃은 아기 고양이를 따뜻하게 보살펴 준 민우의 마음씨가 참 갸륵했습니다." },
+      { id: 7, stage: 1, word: "거닐다", q: "목적지를 향해 바쁘게 뛰지 않고, 여유 있게 천천히 이리저리 걷는 모습을 뜻하는 말은?", options: ["거닐다", "아장거리다", "머물다", "해찰하다"], ans: 0, meaning: "여유 있게 천천히 이리저리 걷다", hint: "산책로를 따라 시원한 바람을 쐬며 한가롭게 걷는 모습이에요.", example: "점심시간에 친구와 함께 학교 숲속 오솔길을 다정하게 거닐었어요." },
+      { id: 8, stage: 1, word: "거멍빛", q: "깊은 밤하늘처럼 짙고 어두운 검은색을 부드럽게 이르는 순우리말은?", options: ["쇳빛", "거멍빛", "반물빛", "쪽빛"], ans: 1, meaning: "검은빛의 순우리말", hint: "'검다'라는 느낌을 담은 고유어 색채어입니다.", example: "밤하늘의 거멍빛 장막 위로 은구슬 같은 별들이 쏟아졌어요." },
+      { id: 9, stage: 1, word: "고이", q: "'정성을 다하여 소중하고 조심스럽게'를 뜻하는 우리말 부사는 무엇일까요?", options: ["진득이", "나직이", "고이", "오롯이"], ans: 2, meaning: "정성을 다하여 소중하고 조심스럽게", hint: "아끼는 보물이나 꽃잎을 상자에 조심스레 넣어둘 때 써요.", example: "친구에게 받은 소중한 편지를 책갈피 사이에 고이 간직했습니다." },
+      { id: 10, stage: 1, word: "곱다", q: "모양이나 마음씨, 색깔이 거칠지 않고 아름다우며 깨끗한 상태를 뜻하는 말은?", options: ["곱다", "푸르다", "맑다", "포근하다"], ans: 0, meaning: "모양이나 마음씨가 맑고 아름답다", hint: "비단결처럼 부드럽거나 고운 목소리를 떠올려 보세요.", example: "한복의 옷고름 선과 색깔이 참으로 곱고 단아했습니다." },
+      { id: 11, stage: 1, word: "그리다", q: "사랑하거나 아끼는 대상을 마음속에 간절히 떠올리며 생각하는 것을 이르는 말은?", options: ["보듬다", "머금다", "그리다", "추스르다"], ans: 2, meaning: "마음속에 어떤 대상을 간절히 떠올리며 생각하다", hint: "그림을 그리는 것뿐 아니라, 보고 싶은 사람을 생각할 때도 써요.", example: "멀리 계신 할머니의 따뜻한 손길을 마음속으로 깊이 그렸습니다." },
+      { id: 12, stage: 1, word: "길미", q: "남에게 돈이나 곡식을 빌려 쓴 뒤에 덧붙여 주는 덤, 즉 '이자'의 순우리말은?", options: ["길미", "남짓", "마지기", "너스레"], ans: 0, meaning: "돈을 빌려 쓴 대가로 덧붙여 주는 돈('이자'의 순우리말)", hint: "원래 빌린 것에 고마운 마음으로 더 얹어주는 덤을 뜻해요.", example: "조상들은 이웃에게 곡식을 빌릴 때 작은 길미를 더해 고마움을 표했습니다." },
+      { id: 13, stage: 1, word: "까무룩", q: "정신이 갑자기 흐려지거나, 조약돌처럼 깜빡 잠이 드는 모양을 나타내는 말은?", options: ["시나브로", "까무룩", "슬몃", "타닥타닥"], ans: 1, meaning: "정신이 어렴풋해지거나 잠깐 잠이 드는 모양", hint: "따뜻한 햇볕 아래서 공부하다가 나도 모르게 스르륵 잠들 때의 느낌이에요.", example: "피곤했던지 책을 읽다가 까무룩 잠이 들고 말았어요." },
+      { id: 14, stage: 1, word: "꽃등", q: "여러 가지 일 중에서 '맨 처음, 가장 한창인 때, 으뜸'을 비유적으로 이르는 말은?", options: ["마루", "꽃등", "새빛", "나래"], ans: 1, meaning: "맨 처음, 한창인 때, 으뜸", hint: "꽃의 가장 화려한 등마루처럼 빛나는 순간을 의미해요.", example: "우리들의 즐거운 초등학교 시절은 인생의 눈부신 꽃등입니다." },
+      { id: 15, stage: 1, word: "꽃비", q: "봄바람에 수많은 꽃잎들이 마치 비처럼 흩날려 떨어지는 모습을 뜻하는 말은?", options: ["여우비", "이슬비", "꽃비", "는개"], ans: 2, meaning: "꽃잎이 비처럼 흩날려 떨어지는 모습", hint: "벚꽃 나무 아래를 걸을 때 머리 위로 떨어지는 낭만적인 풍경이에요.", example: "봄바람이 살랑 불어오자 분홍빛 벚꽃비가 사뿐히 내렸습니다." },
+      { id: 16, stage: 1, word: "나래", q: "'날개'를 문학적으로 아름답고 부드럽게 표현한 순우리말은 무엇일까요?", options: ["나래", "은결", "자락", "누리"], ans: 0, meaning: "날개의 문학적 순우리말", hint: "하늘을 자유롭게 훨훨 날아오르는 새의 날갯짓을 떠올려 보세요.", example: "상상의 나래를 활짝 펴고 동화 속 세상을 탐험해 보아요." },
+      { id: 17, stage: 1, word: "나루", q: "강이나 내를 배를 타고 건너다닐 수 있도록 마련된 나루터를 이르는 말은?", options: ["가람", "나루", "오름", "너럭바위"], ans: 1, meaning: "배를 타고 강이나 내를 건너다니는 곳(나루터)", hint: "'마포나루', '광나루'처럼 옛날 지명에 자주 쓰이던 말이에요.", example: "사공 아저씨가 나루에서 손님들을 배에 태우고 강을 건넜습니다." },
+      { id: 18, stage: 1, word: "나직이", q: "목소리나 음악 소리가 크지 않고 가만하고 낮게 들리는 모양은?", options: ["소곤소곤", "나직이", "진득이", "가만히"], ans: 1, meaning: "소리가 낮고 조용하게", hint: "밤에 잠들기 전 귓가에 조용히 들려주는 자장가 목소리예요.", example: "어머니께서 잠든 아이의 곁에서 나직이 옛이야기를 읊어주셨어요." },
+      { id: 19, stage: 1, word: "남짓", q: "어떤 정해진 크기나 수량보다 조금 더 넘는 정도를 뜻하는 말은?", options: ["남짓", "마지기", "오롯이", "길미"], ans: 0, meaning: "어떤 수량이나 기준보다 조금 남는 정도", hint: "'한 시간 조금 넘게 걸렸다'를 멋지게 표현할 때 써요.", example: "도서관에서 책을 읽다 보니 벌써 한 시간 남짓 흘렀습니다." },
+      { id: 20, stage: 1, word: "너그럽다", q: "마음이 넓고 따뜻하여 남의 실수나 잘못을 잘 이해하고 감싸주는 성품은?", options: ["살갑다", "미덥다", "너그럽다", "조촐하다"], ans: 2, meaning: "마음이 넓고 아량이 있어 남을 잘 감싸주다", hint: "친구의 사소한 실수를 웃으며 괜찮다고 말해주는 넓은 마음씨예요.", example: "선생님께서는 실수한 우리를 너그러운 미소로 다독여 주셨습니다." },
+
+      // 2단계 (21~40)
+      { id: 21, stage: 2, word: "너럭바위", q: "넓고 평평하게 생겨 여러 사람이 편히 앉아 쉴 수 있는 큰 바위는?", options: ["너럭바위", "오름", "마루", "자락"], ans: 0, meaning: "넓고 평평하게 생긴 큰 바위", hint: "계곡 옆에 널찍하게 펼쳐진 천연 평상 같은 바위예요.", example: "계곡 산행을 하다가 시원한 그늘 아래 너럭바위에 앉아 쉬었습니다." },
+      { id: 22, stage: 2, word: "너스레", q: "어떤 말을 그럴듯하게 늘어놓거나 익살맞게 둘러대는 말솜씨는?", options: ["너스레", "두런두런", "해찰", "너울너울"], ans: 0, meaning: "수다스럽게 떠벌려 늘어놓는 말이나 짓", hint: "친구가 웃기려고 능청스럽게 말을 길게 이어갈 때 써요.", example: "진수는 엉뚱한 너스레를 떨어 모둠 친구들을 한바탕 웃게 만들었어요." },
+      { id: 23, stage: 2, word: "너울너울", q: "새가 날개를 부드럽게 치거나, 춤을 추듯 나부끼는 큰 모양은?", options: ["살랑살랑", "한들한들", "너울너울", "타닥타닥"], ans: 2, meaning: "날개를 부드럽게 치며 날거나 춤추는 모양", hint: "두루미가 큰 날개를 펄럭이며 우아하게 날아오르는 모습이에요.", example: "학 한 마리가 푸른 가을 하늘을 너울너울 날아갔습니다." },
+      { id: 24, stage: 2, word: "놀빛", q: "해 질 무렵이나 아침에 붉게 타오르며 하늘을 수놓는 노을의 빛깔은?", options: ["감빛", "쪽빛", "놀빛", "새빛"], ans: 2, meaning: "노을의 붉고 아름다운 빛깔", hint: "저녁 하늘이 황금빛과 붉은빛으로 섞여 반짝이는 노을빛이에요.", example: "서쪽 하늘을 물들인 황홀한 놀빛에 넋을 잃고 바라보았습니다." },
+      { id: 25, stage: 2, word: "누리", q: "'온 세상', '사람들이 살아가는 넓은 세상'을 이르는 아름다운 순우리말은?", options: ["마루", "누리", "가람", "은결"], ans: 1, meaning: "온 세상, 인간 세상", hint: "'누리집(홈페이지)', '온 누리에 평화를' 할 때 쓰이는 단어예요.", example: "우리들의 착한 꿈과 희망이 온 누리에 널리 퍼져나가길 바랍니다." },
+      { id: 26, stage: 2, word: "는개", q: "안개보다는 조금 굵고 가랑비보다는 가는, 아주 잘게 내리는 눈이나 비는?", options: ["는개", "이슬비", "여우비", "꽃비"], ans: 0, meaning: "안개처럼 아주 잘고 가늘게 내리는 눈이나 비", hint: "우산을 쓰지 않아도 옷깃이 촉촉해질 만큼 솜털처럼 내리는 비예요.", example: "아침 숲길에 보슬보슬 내리는 는개 사이로 싱그러운 풀냄새가 번졌어요." },
+      { id: 27, stage: 2, word: "다사롭다", q: "햇살이나 마음씨의 온도가 포근하고 알맞게 따뜻한 느낌을 나타내는 말은?", options: ["다사롭다", "포근하다", "살갑다", "조촐하다"], ans: 0, meaning: "따뜻한 기운이 알맞게 있다", hint: "봄날 창가로 부드럽게 스며드는 햇볕의 온도를 떠올려 보세요.", example: "봄날 오후 운동장에 비치는 다사로운 햇살을 받으며 뛰어놀았습니다." },
+      { id: 28, stage: 2, word: "대우세", q: "사람을 정중하게 대접하고 존중하는 태도나 분위기를 이르는 말은?", options: ["대우세", "너스레", "미덥다", "수수하다"], ans: 0, meaning: "남을 정중히 대접하는 태도나 기세", hint: "손님을 깍듯하고 극진하게 모시는 예의 바른 태도예요.", example: "손님을 정성껏 맞이하는 할머니의 융숭한 대우세에 모두 감동했습니다." },
+      { id: 29, stage: 2, word: "두근두근", q: "기대감에 가슴이 설레거나 긴장되어 심장이 자꾸 크게 뛰는 모양은?", options: ["두런두런", "두근두근", "소곤소곤", "타닥타닥"], ans: 1, meaning: "설레거나 놀라 심장이 크게 뛰는 모양", hint: "발표하기 직전이나 선물을 열어볼 때 가슴에서 나는 소리예요.", example: "체육대회 이어달리기 마지막 주자로 나서자 가슴이 두근두근 뛰었습니다." },
+      { id: 30, stage: 2, word: "두런두런", q: "여럿이 모여 나직하고 정다운 목소리로 끊임없이 이야기하는 소리는?", options: ["두런두런", "조잘거리다", "소곤소곤", "너스레"], ans: 0, meaning: "나직한 목소리로 정답게 이야기하는 소리", hint: "밤에 이불 속에서 가족들이 나누는 따뜻한 대화 소리예요.", example: "텐트 안에서 모둠 친구들이 두런두런 정다운 이야기를 나누었어요." },
+      { id: 31, stage: 2, word: "마뜩하다", q: "어떤 상황이나 물건이 자신의 마음에 꼭 들어 아주 흡족하고 좋은 상태는?", options: ["마뜩하다", "미덥다", "조촐하다", "소담하다"], ans: 0, meaning: "마음에 꼭 들어 흡족하다 (흔히 부정문 '마뜩잖다'로도 쓰임)", hint: "'마음에 꼭 든다'는 뜻을 가진 긍정의 순우리말입니다.", example: "새로 맞춘 반장 임무가 모두에게 아주 마뜩한 결정이 되었습니다." },
+      { id: 32, stage: 2, word: "마루", q: "산의 가장 높은 등성이, 또는 어떤 일의 가장 으뜸이 되는 꼭대기는?", options: ["마루", "너럭바위", "오름", "재"], ans: 0, meaning: "등성이나 산의 꼭대기, 가장 높은 곳", hint: "'산마루', '용마루' 할 때 쓰이는 제일 높은 자리예요.", example: "산마루에 힘차게 올라서자 시원한 바람이 온몸을 감쌌습니다." },
+      { id: 33, stage: 2, word: "마지기", q: "씨앗 한 말을 뿌릴 만한 넓이라는 뜻으로, 옛날 논밭의 크기를 재던 단위는?", options: ["마지기", "남짓", "길미", "자락"], ans: 0, meaning: "씨앗 한 말을 뿌릴 만한 넓이의 논밭 단위", hint: "할아버지께서 시골에서 농사를 지으실 때 쓰시던 넓이 단위예요.", example: "우리 동네 과수원은 논 스무 마지기만큼 넓고 풍요로웠습니다." },
+      { id: 34, stage: 2, word: "말캉말캉", q: "잘 익은 홍시처럼 부드럽고 탄력 있게 살짝 물렁한 촉감을 나타내는 말은?", options: ["말캉말캉", "보드랍다", "포근하다", "한들한들"], ans: 0, meaning: "부드럽고 탄력 있게 물렁물렁한 모양", hint: "가을 감 홍시나 부드러운 젤리를 만질 때의 손느낌이에요.", example: "달콤하게 잘 익은 곶감이 말캉말캉해서 먹기 참 좋았습니다." },
+      { id: 35, stage: 2, word: "맑다", q: "잡티나 더러운 것이 전혀 섞이지 않아 깨끗하고 환한 상태를 뜻하는 말은?", options: ["맑다", "곱다", "푸르다", "함초롬하다"], ans: 0, meaning: "더러운 것이 섞이지 않고 깨끗하다", hint: "바닥까지 훤히 들여다보이는 시냇물이나 파란 가을 하늘이에요.", example: "산속 옹달샘에서 맑은 물이 퐁퐁 솟아나고 있었습니다." },
+      { id: 36, stage: 2, word: "머금다", q: "입속이나 꽃망울, 마음속에 어떤 기운이나 눈물을 소중히 품고 있는 것은?", options: ["머금다", "보듬다", "어루만지다", "그리다"], ans: 0, meaning: "입이나 꽃망울 속에 물기나 기운을 품다", hint: "아침 꽃잎이 이슬을 살포시 안고 있는 모습을 떠올려 보세요.", example: "아침에 피어난 나팔꽃이 영롱한 이슬방울을 촉촉이 머금고 있었어요." },
+      { id: 37, stage: 2, word: "머물다", q: "다른 곳으로 훌쩍 떠나지 않고 한곳에 머물러 자리 잡는 것을 이르는 말은?", options: ["거닐다", "머물다", "이울다", "추스르다"], ans: 1, meaning: "다른 곳으로 가지 않고 한곳에 머무르다", hint: "철새가 쉬어가거나 여행 중에 잠시 발걸음을 멈추는 모습이에요.", example: "따스한 햇살이 우리 교실 창가에 오래도록 머물렀습니다." },
+      { id: 38, stage: 2, word: "메", q: "우리 조상들이 우뚝 솟은 '산(山)'을 부르던 고유한 옛 우리말은?", options: ["메", "가람", "재", "오름"], ans: 0, meaning: "산(山)을 이르는 순우리말", hint: "'뫼'라고도 하며, 푸른 산을 우리말로 부를 때 써요.", example: "마을 뒤편에 웅장하게 서 있는 푸른 메가 마을을 감싸 안아주었습니다." },
+      { id: 39, stage: 2, word: "메지다", q: "밥에 찰기가 적어 푸슬푸슬하거나, 어떤 일의 결말을 딱 짓는 것을 뜻하는 말은?", options: ["메지다", "마뜩하다", "수수하다", "조촐하다"], ans: 0, meaning: "밥에 찰기가 적다 / 일의 결말을 짓다", hint: "찹쌀밥과 달리 멥쌀밥의 특성을 나타낼 때 써요.", example: "오늘 지은 밥은 찰기가 덜하여 알갱이가 고슬고슬 메집니다." },
+      { id: 40, stage: 2, word: "모싯빛", q: "여름철 시원한 모시풀의 잎처럼 은은하고 맑은 연초록 풀빛을 뜻하는 말은?", options: ["갈맷빛", "모싯빛", "쪽빛", "반물빛"], ans: 1, meaning: "모시풀 잎처럼 은은하고 맑은 연초록빛", hint: "여름 한복 모시 옷감의 은은하고 시원한 자연의 빛깔이에요.", example: "새봄에 돋아난 어린 싹들이 싱그러운 모싯빛 옷을 입었습니다." },
+
+      // 3단계 (41~60)
+      { id: 41, stage: 3, word: "물허벅", q: "제주도에서 물이 귀하던 시절, 식수를 길어 등에 지고 나르던 질그릇 항아리는?", options: ["소쿠리", "물허벅", "너럭바위", "오름"], ans: 1, meaning: "제주도에서 물을 길어 나를 때 등에 지던 항아리", hint: "제주 해녀나 어머니들이 '구덕'에 넣어 등에 졌던 토기예요.", example: "제주 민속박물관에서 옛날 여인들이 물을 긷던 물허벅을 보았습니다." },
+      { id: 42, stage: 3, word: "뭉게뭉게", q: "맑은 여름 하늘에 흰 구름이나 연기가 덩어리를 이루며 높이 피어오르는 모양은?", options: ["너울너울", "뭉게뭉게", "한들한들", "살랑살랑"], ans: 1, meaning: "구름이나 연기가 덩어리를 지어 피어오르는 모양", hint: "솜사탕처럼 크고 둥실둥실한 적란운 구름을 떠올려 보세요.", example: "파란 하늘 위로 하얀 솜사탕 같은 구름이 뭉게뭉게 피어올랐습니다." },
+      { id: 43, stage: 3, word: "미덥다", q: "행동이나 태도가 성실하여 마음속으로 믿음이 가고 든든한 상태는?", options: ["살갑다", "미덥다", "수수하다", "오롯하다"], ans: 1, meaning: "믿음직하고 신뢰할 만하다", hint: "약속을 꼭 지키는 믿음직한 친구를 볼 때 드는 생각이에요.", example: "언제나 맡은 청소를 묵묵히 해내는 민수의 모습이 참 미더웠습니다." },
+      { id: 44, stage: 3, word: "반물빛", q: "검은빛이 감도는 아주 짙고 깊은 남빛(남색)을 뜻하는 전통 우리말 색깔은?", options: ["쪽빛", "반물빛", "갈맷빛", "거멍빛"], ans: 1, meaning: "검은빛을 띤 짙은 남빛", hint: "새벽녘 동트기 직전의 짙푸른 밤하늘 색상이에요.", example: "할아버지의 단정한 두루마기는 기품 있는 반물빛이었습니다." },
+      { id: 45, stage: 3, word: "반짝반짝", q: "작은 별이나 맑은 이슬이 빛을 받아 자꾸 환하게 빛나는 모양은?", options: ["반짝반짝", "타닥타닥", "새록새록", "윤슬"], ans: 0, meaning: "작은 빛이 자꾸 맑게 번쩍이는 모양", hint: "'반짝반짝 작은 별' 노래에 나오는 가장 대표적인 표현이에요.", example: "아이들의 초롱초롱한 눈망울이 밤하늘 별처럼 반짝반짝 빛났습니다." },
+      { id: 46, stage: 3, word: "보드랍다", q: "아기 살결이나 새의 깃털처럼 닿는 감촉이 매우 곱고 부드러운 상태는?", options: ["말캉말캉", "보드랍다", "함초롬하다", "다사롭다"], ans: 1, meaning: "살갗에 닿는 느낌이 부드럽고 곱다", hint: "갓 태어난 병아리의 노란 털을 살살 쓰다듬을 때의 느낌이에요.", example: "봄바람에 날리는 버들강아지의 솜털이 무척 보드라웠습니다." },
+      { id: 47, stage: 3, word: "보듬다", q: "두 팔로 가슴에 따뜻하게 안아 보호하고 감싸주는 다정한 행동은?", options: ["보듬다", "추스르다", "머금다", "어루만지다"], ans: 0, meaning: "가슴에 따뜻하게 안아 감싸주다", hint: "울고 있는 아기나 다친 새를 두 손으로 가슴에 폭 안아주는 모습이에요.", example: "어머니는 넘어져서 우는 동생을 두 팔로 따뜻하게 보듬어 주셨습니다." },
+      { id: 48, stage: 3, word: "볼우물", q: "방긋 웃을 때 양쪽 뺨에 동그랗고 귀엽게 쏙 들어가는 '보조개'의 순우리말은?", options: ["볼우물", "꽃등", "은결", "풋낯"], ans: 0, meaning: "웃을 때 볼에 쏙 들어가는 보조개", hint: "볼에 샘물처럼 쏙 파인 예쁜 우물이라는 뜻이에요.", example: "동생이 환하게 웃을 때마다 양 볼에 예쁜 볼우물이 생겼어요." },
+      { id: 49, stage: 3, word: "봄", q: "얼어붙은 땅이 녹고 온갖 새싹과 꽃이 피어나는 희망찬 계절은?", options: ["봄", "누리", "새빛", "가람"], ans: 0, meaning: "겨울과 여름 사이에 꽃이 피는 따뜻한 계절", hint: "개나리, 진달래가 피어나며 새 학년이 시작되는 계절이에요.", example: "따스한 햇살과 함께 산과 들에 향기로운 봄이 찾아왔습니다." },
+      { id: 50, stage: 3, word: "살갑다", q: "마음씨가 부드럽고 친절하며 상냥하여 정이 많은 태도를 뜻하는 말은?", options: ["살갑다", "미덥다", "너그럽다", "수수하다"], ans: 0, meaning: "마음씨가 부드럽고 다정다감하여 붙임성이 있다", hint: "처음 보는 친구에게도 먼저 반갑게 인사하는 다정한 성격이에요.", example: "새로 전학 온 짝꿍은 성격이 살가워서 금세 친구들과 친해졌습니다." },
+      { id: 51, stage: 3, word: "살랑살랑", q: "봄바람이나 강아지의 꼬리가 가볍고 부드럽게 흔들리는 모양은?", options: ["한들한들", "살랑살랑", "너울너울", "아장아장"], ans: 1, meaning: "바람이 가볍고 부드럽게 부는 모양", hint: "기분 좋게 불어오는 가벼운 바람을 떠올려 보세요.", example: "시원한 봄바람이 살랑살랑 불어와 나뭇잎을 간지럽혔습니다." },
+      { id: 52, stage: 3, word: "살며시", q: "남의 눈에 띄지 않게 아주 조용하고 가만히 움직이는 모양은?", options: ["나직이", "시나브로", "살며시", "슬몃"], ans: 2, meaning: "남이 모르게 조용하고 가만히", hint: "깜짝 선물을 책상 서랍에 몰래 넣어둘 때의 발걸음이에요.", example: "친구가 수업에 집중할 수 있도록 살며시 문을 닫고 나갔습니다." },
+      { id: 53, stage: 3, word: "새", q: "'새롭다' 또는 '처음의'라는 뜻을 더하는 우리말 말밑(접두사)은?", options: ["새", "참", "풋", "온"], ans: 0, meaning: "새로운, 처음의 뜻을 지닌 순우리말", hint: "'새해', '새빛', '새싹' 할 때 앞에 붙는 말이에요.", example: "새 학기를 맞아 새 공책에 정성껏 이름을 적었습니다." },
+      { id: 54, stage: 3, word: "새빛", q: "어둠을 뚫고 솟아오르는 새로운 아침 햇살, 혹은 새로운 희망의 빛은?", options: ["놀빛", "새빛", "윤슬", "은결"], ans: 1, meaning: "새로운 빛, 희망찬 시작의 빛", hint: "새해 첫날 아침에 떠오르는 눈부신 태양의 빛이에요.", example: "동쪽 바다 위로 새해의 희망찬 새빛이 힘차게 솟구쳤습니다." },
+      { id: 55, stage: 3, word: "새록새록", q: "어떤 기억이나 즐거운 생각이 자꾸자꾸 새롭게 샘솟는 모양은?", options: ["두근두근", "새록새록", "타닥타닥", "시나브로"], ans: 1, meaning: "어떤 생각이나 느낌이 자꾸 새롭게 일어나는 모양", hint: "지난 소풍 사진을 볼 때 옛 추억이 다시 떠오르는 느낌이에요.", example: "작년에 함께했던 학예회 사진을 보니 즐거운 추억이 새록새록 떠올랐어요." },
+      { id: 56, stage: 3, word: "소곤소곤", q: "다른 사람이 듣지 못하도록 귓가에 대고 낮은 목소리로 가만히 속삭이는 소리는?", options: ["소곤소곤", "두런두런", "조잘거리다", "나직이"], ans: 0, meaning: "남이 듣지 못하게 귓속말로 나직이 이야기하는 소리", hint: "도서관에서 짝꿍에게 비밀 이야기를 전할 때 내는 소리예요.", example: "도서관에서는 친구와 이야기할 때 소곤소곤 귓속말로 속삭여야 해요." },
+      { id: 57, stage: 3, word: "소담하다", q: "음식이나 꽃송이가 풍성하고 탐스러워 보기에 넉넉하고 먹음직스러운 것은?", options: ["소담하다", "조촐하다", "수수하다", "함초롬하다"], ans: 0, meaning: "생김새가 탐스럽고 복스러우며 넉넉하다", hint: "함박눈이 소복이 쌓이거나 접시에 음식이 가득 담긴 모양이에요.", example: "마당가에 하얀 목련꽃이 탐스럽고 소담하게 활짝 피었습니다." },
+      { id: 58, stage: 3, word: "소솜", q: "소나기가 세차게 한 번 지나가는 아주 짧은 틈이나 동안을 뜻하는 제주 방언 고유어는?", options: ["소솜", "는개", "여우비", "이내"], ans: 0, meaning: "소나기가 한 번 지나가는 아주 짧은 동안", hint: "갑자기 후두둑 내리다가 금세 개는 짧은 찰나의 시간이에요.", example: "갑작스러운 소솜에 처마 밑으로 뛰어들어가 비를 피했습니다." },
+      { id: 59, stage: 3, word: "소쿠리", q: "대나무나 싸리나무를 엮어 만든, 곡식이나 채소를 담아두는 넓적한 전통 그릇은?", options: ["물허벅", "소쿠리", "너럭바위", "소담"], ans: 1, meaning: "대나무나 싸리로 엮어 만든 넓적한 바구니", hint: "할머니께서 밭에서 딴 고추나 나물을 담아 말리실 때 쓰는 바구니예요.", example: "할머니께서 텃밭에서 갓 딴 붉은 고추를 대나무 소쿠리에 가득 담으셨어요." },
+      { id: 60, stage: 3, word: "쇳빛", q: "차가운 무쇠나 쇠붙이의 표면에서 풍기는 어둡고 묵직한 푸른 잿빛은?", options: ["쇳빛", "거멍빛", "모싯빛", "쪽빛"], ans: 0, meaning: "쇠의 표면에서 나는 차갑고 어두운 잿빛 (첫빛/쇳빛)", hint: "단단한 쇠칼이나 갑옷에서 풍기는 서늘한 색깔이에요.", example: "겨울철 새벽바람이 쇳빛 구름 사이로 매섭게 불어왔습니다." },
+
+      // 4단계 (61~80)
+      { id: 61, stage: 4, word: "수수하다", q: "물건이나 차림새가 요란하거나 사치스럽지 않고 소박하며 무던한 상태는?", options: ["수수하다", "조촐하다", "소담하다", "함초롬하다"], ans: 0, meaning: "화려하지 않고 평범하며 꾸밈이 없다", hint: "화려한 장식 없이도 단정하고 자연스러운 멋이에요.", example: "선생님께서는 늘 수수한 옷차림을 하고도 단아한 멋을 풍기셨습니다." },
+      { id: 62, stage: 4, word: "숨비소리", q: "제주 해녀들이 깊은 바닷속 물질을 마치고 물 위로 올라와 내뿜는 맑고 긴 숨소리는?", options: ["숨비소리", "물허벅", "소솜", "윤슬"], ans: 0, meaning: "해녀가 물 밖으로 나와 내쉬는 특유의 휘파람 같은 숨소리", hint: "바다의 생명력과 해녀들의 땀방울이 담긴 휘파람 소리 같아요.", example: "푸른 파도 위로 해녀 삼춘들의 애환이 담긴 맑은 숨비소리가 울려 퍼졌어요." },
+      { id: 63, stage: 4, word: "숫눈", q: "눈이 하얗게 내린 뒤, 아무도 밟지 않아 티 없이 깨끗한 첫눈을 뜻하는 순우리말은?", options: ["숫눈", "는개", "이슬비", "희나리"], ans: 0, meaning: "내린 뒤 아직 아무도 밟지 않은 깨끗한 눈", hint: "'숫처녀', '숫음식'처럼 손대지 않은 순수함을 뜻하는 접두사 '숫-'이 붙었어요.", example: "아침 일찍 운동장에 나가 아무 발자국도 없는 숫눈 위에 내 발자국을 남겼어요." },
+      { id: 64, stage: 4, word: "슬몃", q: "남이 알아채지 못하게 슬그머니 조심스럽게 행동하는 모양은?", options: ["슬몃", "시나브로", "살며시", "까무룩"], ans: 0, meaning: "슬그머니 남의 눈에 띄지 않게 (슬멋슬멋/슬몃)", hint: "슬그머니 뒤로 물러서거나 넌지시 웃음을 띨 때 써요.", example: "장난을 치려던 진수는 선생님과 눈이 마주치자 슬몃 제자리로 돌아갔습니다." },
+      { id: 65, stage: 4, word: "시나브로", q: "'모르는 사이에 조금씩 조금씩 차츰차츰'을 뜻하는 대표적인 순우리말 부사는?", options: ["시나브로", "살며시", "진득이", "가만히"], ans: 0, meaning: "모르는 사이에 조금씩 조금씩", hint: "하루 10분씩 독서를 하다 보면 어느새 지식이 넓어질 때 써요.", example: "매일 한 편씩 쓴 글짓기 실력이 시나브로 몰라보게 쑥쑥 늘었습니다." },
+      { id: 66, stage: 4, word: "아늑하다", q: "엄마 품속이나 따뜻한 방처럼 포근하게 감싸 안겨 편안하고 조용한 느낌은?", options: ["아늑하다", "포근하다", "다사롭다", "소담하다"], ans: 0, meaning: "포근하게 감싸 안기듯 편안하고 부드럽다", hint: "바람막이가 잘 된 아담한 산골 오두막의 느낌이에요.", example: "주황빛 스탠드 조명을 켜니 내 방이 숲속 오두막처럼 아늑해졌어요." },
+      { id: 67, stage: 4, word: "아람", q: "가을철 밤이나 도토리 같은 열매가 충분히 잘 익어서 저절로 껍질이 벌어진 상태는?", options: ["아람", "꽃등", "아름드리", "소담"], ans: 0, meaning: "밤이나 도토리가 완전히 익어 저절로 벌어진 상태", hint: "'아람 벌다', '아람 밤' 할 때 쓰이는 순수 알밤의 모습이에요.", example: "가을 산길에 툭툭 소리를 내며 탐스러운 아람이 떨어져 있었습니다." },
+      { id: 68, stage: 4, word: "아름드리", q: "둘레가 두 팔을 둥글게 모아 안은 한 아름이 훌쩍 넘을 만큼 아주 굵고 큰 나무는?", options: ["아름드리", "너럭바위", "마루", "자락"], ans: 0, meaning: "둘레가 한 아름이 넘을 만큼 아주 굵은 나무", hint: "수백 년 동안 학교 교정을 지켜온 거대한 느티나무를 떠올려 보세요.", example: "교문 앞에는 수백 년 된 아름드리 느티나무가 시원한 그늘을 만들어 줍니다." },
+      { id: 69, stage: 4, word: "아장아장", q: "어린아이나 작은 오리가 짧은 다리로 뒤뚱거리며 조심스레 걷는 귀여운 모양은?", options: ["아장아장", "살랑살랑", "너울너울", "한들한들"], ans: 0, meaning: "어린아이가 작은 걸음으로 조심조심 걷는 모양", hint: "걸음마를 막 시작한 아기의 앙증맞은 걸음걸이예요.", example: "돌이 지난 아기 동생이 양팔을 벌리고 아장아장 걸어왔습니다." },
+      { id: 70, stage: 4, word: "어루만지다", q: "상처 난 곳이나 슬픈 마음을 부드럽게 손으로 쓰다듬어 위로해 주는 따뜻한 손길은?", options: ["어루만지다", "보듬다", "머금다", "추스르다"], ans: 0, meaning: "부드럽게 쓰다듬으며 위로하다", hint: "슬퍼하는 친구의 등을 조용히 쓸어내려 주는 다정한 행동이에요.", example: "선생님께서는 눈물을 글썽이는 친구의 어깨를 따스하게 어루만져 주셨습니다." },
+      { id: 71, stage: 4, word: "여우비", q: "하늘에 먹구름 없이 볕이 쨍쨍 나 있는 맑은 날에 잠깐 동안 지나가는 비는?", options: ["여우비", "는개", "이슬비", "꽃비"], ans: 0, meaning: "맑은 날에 잠깐 내리다가 그치는 비", hint: "'여우가 시집가는 날'이라는 재미있는 옛이야기가 얽혀 있어요.", example: "햇살이 눈부신 오후에 별안간 반짝이는 여우비가 지나갔습니다." },
+      { id: 72, stage: 4, word: "오롯이", q: "조금도 모자라거나 흐트러짐 없이 온전하고 깨끗하게 담긴 모양은?", options: ["오롯이", "고이", "진득이", "수수하게"], ans: 0, meaning: "모자람 없이 온전하고 깨끗하게", hint: "나만의 온전한 집중이나 정성을 남김없이 다 쏟아부을 때 써요.", example: "온종일 오롯이 나만의 독서 시간에 푹 빠져 행복했습니다." },
+      { id: 73, stage: 4, word: "오름", q: "제주도 한라산 기슭에 솟아 있는 독립된 작은 화산 언덕 봉우리들을 부르는 말은?", options: ["오름", "메", "재", "마루"], ans: 0, meaning: "제주도 화산체 언덕을 이르는 말", hint: "'용눈이오름', '따라비오름' 등 제주도 여행 갈 때 만나는 언덕이에요.", example: "제주도 여행 중에 완만한 능선이 아름다운 용눈이오름에 올랐습니다." },
+      { id: 74, stage: 4, word: "윤슬", q: "햇빛이나 달빛을 받아 반짝반짝 보석처럼 빛나는 잔물결을 뜻하는 아름다운 우리말은?", options: ["윤슬", "은결", "물허벅", "새빛"], ans: 0, meaning: "햇빛이나 달빛에 비치어 반짝이는 잔물결", hint: "강물이나 호숫가에 오후 햇살이 내려앉아 은빛으로 반짝이는 물결이에요.", example: "오후 강물 위로 금빛, 은빛 윤슬이 눈부시게 부서져 내렸습니다." },
+      { id: 75, stage: 4, word: "은결", q: "은은하고 곱게 물결치는 고운 결이나 숨결을 뜻하는 말은?", options: ["은결", "나래", "윤슬", "자락"], ans: 0, meaning: "은은하게 물결치는 무늬나 고운 숨결", hint: "비단이나 맑은 물결의 은은하고 고운 무늬 결을 뜻해요.", example: "호숫가에 번지는 은결 같은 물결무늬가 마음에 평화를 주었습니다." },
+      { id: 76, stage: 4, word: "이내", q: "해 질 무렵 멀리 산이나 들에 푸르스름하고 아스라하게 끼는 안개 같은 기운은?", options: ["이내", "해미", "는개", "놀빛"], ans: 0, meaning: "해 질 무렵 멀리 보이는 푸르스름하고 아스라한 기운", hint: "저녁 무렵 먼 산허리에 푸르스름하게 안개처럼 감도는 풍경이에요.", example: "저녁노을 아래로 푸른 이내가 내려앉아 온 마을이 그림 같았습니다." },
+      { id: 77, stage: 4, word: "이슬비", q: "실오라기처럼 아주 가늘고 조용하게 숲과 대지를 적시는 보슬비는?", options: ["이슬비", "꽃비", "여우비", "는개"], ans: 0, meaning: "물방울이 가늘고 조용하게 내리는 비", hint: "'이슬비 내리는 이른 아침에' 동요를 기억해 보세요.", example: "조용한 풀밭 위로 다정한 이슬비가 소리 없이 내려앉았습니다." },
+      { id: 78, stage: 4, word: "이울다", q: "화려하게 피었던 꽃이나 잎이 시들어가거나, 둥근 달이 차츰 기우는 것은?", options: ["이울다", "머물다", "감돌다", "메지다"], ans: 0, meaning: "꽃이나 잎이 시들어가다, 달이 기울다", hint: "가을이 되어 활짝 피었던 국화꽃이 차츰 시드는 자연의 섭리예요.", example: "가을바람이 차가워지자 화단의 붉은 장미꽃도 차츰 이울어 갔습니다." },
+      { id: 79, stage: 4, word: "자락", q: "옷의 너른 솔이나 넓게 뻗어 나간 산의 기슭 줄기를 뜻하는 말은?", options: ["자락", "나래", "마루", "너럭바위"], ans: 0, meaning: "옷이나 산, 구름 따위의 넓게 퍼진 부분", hint: "'치맛자락', '지리산 자락' 할 때 넓게 펼쳐진 부분이에요.", example: "우리는 맑은 공기를 마시며 북한산 자락을 따라 천천히 걸었습니다." },
+      { id: 80, stage: 4, word: "재", q: "높은 산을 넘어가는 길이 나 있는 고갯길을 이르는 순우리말은?", options: ["재", "메", "오름", "나루"], ans: 0, meaning: "길이 나 있는 높은 산의 고개", hint: "'문경새재', '대관령 옛재' 할 때 굽이굽이 산고개예요.", example: "조상들은 과거 시험을 보러 가기 위해 험준한 산재를 넘어야 했습니다." },
+
+      // 5단계 (81~100)
+      { id: 81, stage: 5, word: "조잘거리다", q: "어린아이들이나 작은 새들이 쉴 새 없이 명랑하게 재잘거리며 떠드는 모습은?", options: ["조잘거리다", "소곤소곤", "두런두런", "너스레"], ans: 0, meaning: "작은 소리로 끊임없이 재잘재잘 이야기하다", hint: "참새들이 짹짹거리거나 1학년 동생들이 즐겁게 재잘대는 모습이에요.", example: "쉬는 시간이 되자 교실 안이 아이들의 조잘거리는 소리로 활기가 넘쳤어요." },
+      { id: 82, stage: 5, word: "조촐하다", q: "규모가 크거나 요란하지 않고, 알맞고 깔끔하며 아담한 차림새나 모임은?", options: ["조촐하다", "소담하다", "수수하다", "함초롬하다"], ans: 0, meaning: "아담하고 깔끔하며 번잡하지 않다", hint: "가족끼리 케이크 하나를 두고 오붓하게 축하하는 생일파티예요.", example: "가족들이 모여 케이크에 촛불을 켜고 조촐한 축하 파티를 열었습니다." },
+      { id: 83, stage: 5, word: "진득이", q: "성급하게 조급해하지 않고 참을성 있게 끝까지 끈기를 지키는 태도는?", options: ["진득이", "가만히", "시나브로", "오롯이"], ans: 0, meaning: "참을성 있고 끈기 있게 묵묵히", hint: "어려운 수학 문제를 풀 때 포기하지 않고 엉덩이를 붙이고 앉아 있는 태도예요.", example: "의자에 앉아 진득이 문제를 풀다 보니 마침내 정답을 찾아냈습니다." },
+      { id: 84, stage: 5, word: "쪽빛", q: "'쪽'이라는 식물에서 물감을 뽑아 염색한, 깊고 맑은 푸른 바다 빛깔은?", options: ["쪽빛", "갈맷빛", "반물빛", "거멍빛"], ans: 0, meaning: "맑고 짙은 푸른빛 (남빛)", hint: "'청출어람'의 우리말 풀이로, 가을 하늘이나 맑은 동해 바다 색이에요.", example: "가을날 동해 바다는 바라보기만 해도 가슴이 뻥 뚫리는 쪽빛이었습니다." },
+      { id: 85, stage: 5, word: "차마", q: "양심이나 안타까운 마음에 도저히 모질게 행동하지 못함을 나타낼 때 쓰는 말은?", options: ["차마", "살며시", "진득이", "오롯이"], ans: 0, meaning: "마음이 아파서 어찌하지 못함을 나타내는 말", hint: "'차마 눈 뜨고 볼 수 없다', '차마 거절하지 못했다' 할 때 써요.", example: "울먹이는 친구의 얼굴을 보자 차마 발걸음이 떨어지지 않았습니다." },
+      { id: 86, stage: 5, word: "참", q: "거짓이 없이 진실되고 순수한 상태, 혹은 일을 하다가 꿀맛같이 쉬는 틈은?", options: ["참", "새", "길미", "마루"], ans: 0, meaning: "진실하고 순수한 것 / 또는 잠시 쉬는 때와 새참", hint: "'참된 사람', '참사랑', 혹은 농사짓다 먹는 '새참'이에요.", example: "친구를 대할 때는 언제나 거짓 없는 참된 마음을 보여주어야 합니다." },
+      { id: 87, stage: 5, word: "추스르다", q: "흩어지거나 어지러워진 물건이나 흐트러진 마음가짐을 단정하게 정돈하는 것은?", options: ["추스르다", "보듬다", "머금다", "어루만지다"], ans: 0, meaning: "흩어진 일이나 마음을 가다듬어 수습하다", hint: "슬픈 일이 있어도 훌훌 털고 마음을 다잡을 때 써요.", example: "시험에 실패했지만 얼른 슬픔을 추스르고 다시 용기를 내어 도전했습니다." },
+      { id: 88, stage: 5, word: "타닥타닥", q: "모닥불 속의 장작이나 알밤이 불꽃을 튀기며 연달아 경쾌하게 터지는 소리는?", options: ["타닥타닥", "두근두근", "소곤소곤", "살랑살랑"], ans: 0, meaning: "작은 불꽃이나 열매가 연달아 터지는 소리", hint: "캠핑장 모닥불 속에서 나무가 타며 불꽃이 튈 때 나는 소리예요.", example: "모닥불이 타닥타닥 소리를 내며 밤하늘에 예쁜 불씨를 날렸습니다." },
+      { id: 89, stage: 5, word: "토닥토닥", q: "속상해하는 친구의 등이나 어깨를 손바닥으로 가볍고 정답게 두드려주는 모양은?", options: ["토닥토닥", "아장아장", "한들한들", "소곤소곤"], ans: 0, meaning: "등이나 어깨를 가볍게 정답게 두드리는 모양", hint: "'힘내!' 하면서 친구의 등을 가볍게 쳐주는 위로의 손길이에요.", example: "우울해하는 짝꿍의 어깨를 토닥토닥 두드리며 따뜻한 응원을 보냈습니다." },
+      { id: 90, stage: 5, word: "포근하다", q: "겨울 솜이불처럼 따뜻하고 부드러워 몸과 마음이 편안하게 녹는 느낌은?", options: ["포근하다", "다사롭다", "아늑하다", "보드랍다"], ans: 0, meaning: "기온이나 감촉이 따뜻하고 편안하다", hint: "추운 날 집에 돌아와 따뜻한 이불 속에 쏙 들어갔을 때의 느낌이에요.", example: "어머니 품에 안기자 세상에서 가장 포근한 온기가 전해졌습니다." },
+      { id: 91, stage: 5, word: "푸르다", q: "맑은 가을 하늘이나 싱싱한 여름 나뭇잎처럼 맑고 파란 빛깔을 띠는 것은?", options: ["푸르다", "맑다", "곱다", "쪽빛"], ans: 0, meaning: "맑은 하늘이나 싱싱한 풀빛처럼 파랗다", hint: "'푸른 하늘 은하수' 노래에 나오는 맑고 싱그러운 색깔이에요.", example: "비 갠 뒤 운동장 너머로 펼쳐진 하늘이 눈이 시리도록 푸르렀습니다." },
+      { id: 92, stage: 5, word: "풋낯", q: "깊이 알지는 못하지만 길에서 마주치면 서로 얼굴을 알아볼 정도로 조금 아는 사이는?", options: ["풋낯", "볼우물", "나루", "꽃등"], ans: 0, meaning: "서로 얼굴을 익힐 정도로 조금 아는 사이", hint: "'풋사과'처럼 아직 무르익지 않고 얼굴만 익힌 사이를 뜻해요.", example: "옆 반 친구와는 아직 깊은 이야기는 안 해봤지만 서로 풋낯은 익힌 사이예요." },
+      { id: 93, stage: 5, word: "하늘거리다", q: "얇은 명주천이나 코스모스 꽃잎이 바람을 타고 가볍게 흔들리는 모습은?", options: ["하늘거리다", "너울너울", "말캉거리다", "조잘거리다"], ans: 0, meaning: "바람에 얇은 천이나 꽃잎이 가볍게 흔들리다", hint: "가을 길가에 핀 가녀린 코스모스가 가을바람에 흔들리는 모습이에요.", example: "가을 길가에 핀 분홍빛 코스모스가 미풍에 하늘거리고 있었습니다." },
+      { id: 94, stage: 5, word: "한들한들", q: "가벼운 물체가 부드러운 바람을 타고 이리저리 춤추듯 가볍게 흔들리는 모양은?", options: ["한들한들", "살랑살랑", "너울너울", "타닥타닥"], ans: 0, meaning: "가벼운 물체가 바람을 타고 부드럽게 흔들리는 모양", hint: "'살랑살랑'보다 더 부드럽고 가볍게 흔들리는 모양이에요.", example: "바람을 따라 한들한들 춤추는 버드나무 가지가 참 평화로웠습니다." },
+      { id: 95, stage: 5, word: "함초롬하다", q: "물기를 머금어 젖은 모습이 흩어짐 없이 차분하고 깨끗하며 단정한 상태는?", options: ["함초롬하다", "소담하다", "보드랍다", "조촐하다"], ans: 0, meaning: "차분하고 촉촉하게 젖어 가지런하고 맑다", hint: "새벽 이슬을 촉촉하게 머금은 하얀 백합꽃의 정갈한 모습이에요.", example: "아침 이슬을 듬뿍 머금은 들꽃이 함초롬한 자태로 피어 있었습니다." },
+      { id: 96, stage: 5, word: "해미", q: "바다 위에 뿌옇고 짙게 끼어 신비로운 분위기를 자아내는 바다 안개는?", options: ["해미", "는개", "이내", "여우비"], ans: 0, meaning: "바다 위에 짙게 낀 안개", hint: "바다(해)에 낀 안개를 뜻하는 멋진 고유어 명칭이에요.", example: "자욱한 해미 사이로 등대의 따뜻한 불빛이 깜빡이고 있었습니다." },
+      { id: 97, stage: 5, word: "해찰", q: "지금 꼭 해야 할 공부나 일에 집중하지 않고 엉뚱한 짓을 하며 한눈을 파는 것은?", options: ["해찰", "너스레", "슬몃", "길미"], ans: 0, meaning: "해야 할 일을 하지 않고 엉뚱한 짓을 하며 한눈을 파는 것 (해찬/해찰)", hint: "숙제하다가 창밖의 참새를 보며 딴청 피우는 모습이에요.", example: "수업 시간에 해찰을 부리지 않고 선생님 말씀에 귀를 쫑긋 세웠습니다." },
+      { id: 98, stage: 5, word: "희나리", q: "완전히 바짝 마르지 않아 불에 넣으면 연기가 많이 나는 채 마르지 않은 장작은?", options: ["희나리", "숫눈", "소쿠리", "너럭바위"], ans: 0, meaning: "채 마르지 않은 덜 마른 장작", hint: "덜 말라서 불꽃 대신 하얀 연기가 피어오르는 나무 장작이에요.", example: "캠프파이어에 덜 마른 희나리를 넣었더니 하얀 연기가 솔솔 피어올랐어요." },
+      { id: 99, stage: 5, word: "별", q: "어두운 밤하늘을 수놓으며 맑고 영롱하게 빛나는 소중한 천체는?", options: ["별", "새빛", "놀빛", "윤슬"], ans: 0, meaning: "밤하늘에 반짝이는 천체, 또는 소중한 존재", hint: "우리나라 어린이들 누구나 가슴에 품고 있는 반짝이는 꿈이에요.", example: "여름밤 시골 하늘에서 쏟아질 듯 빛나는 무수한 별들을 바라보았습니다." },
+      { id: 100, stage: 5, word: "골", q: "산과 산 사이에 깊고 길게 패어 물이 흐르는 골짜기를 뜻하는 순우리말은?", options: ["골", "마루", "재", "가람"], ans: 0, meaning: "산과 산 사이에 깊게 패어 물이 흐르는 골짜기", hint: "'깊은 골', '골짜기' 할 때 쓰이는 순수한 우리말이에요.", example: "깊은 산 골을 따라 맑고 차가운 시냇물이 쉼 없이 흘러내렸습니다." }
+    ];
+
+    /* ================= 애플리케이션 상태 ================= */
+    let currentStageId = 1;
+    let quizQuestionList = [];
+    let currentQuestionIndex = 0;
+    let currentScore = 0;
+    let currentCombo = 0;
+    let incorrectQuestions = [];
+    let isSoundOn = true;
+    let audioCtx = null;
+
+    /* 로컬 스토리지 진도 관리 키 */
+    const STORAGE_KEY = "korean_words_100_progress_v2";
+
+    function getProgressData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveStageProgress(stageId, score, perfectCount) {
+      const data = getProgressData();
+      if (!data[stageId] || data[stageId].score < score) {
+        data[stageId] = {
+          completed: true,
+          score: score,
+          clearedWords: perfectCount,
+          updatedAt: new Date().toISOString()
+        };
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch(e) {}
+      }
+      updateHomeDashboard();
+    }
+
+    /* ================= Web Audio API 무의존성 사운드 ================= */
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, duration, type = 'sine', gainVal = 0.15) {
+      if (!isSoundOn) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playCorrectSound() {
+      if (!isSoundOn) return;
+      // 실로폰 도 - 미 - 솔 화음 연주
+      playTone(523.25, 0.15, 'triangle', 0.2);
+      setTimeout(() => playTone(659.25, 0.15, 'triangle', 0.2), 90);
+      setTimeout(() => playTone(783.99, 0.28, 'triangle', 0.22), 180);
+    }
+
+    function playIncorrectSound() {
+      if (!isSoundOn) return;
+      // 부드러운 오답 뿅 소리
+      playTone(280, 0.2, 'sawtooth', 0.12);
+      setTimeout(() => playTone(220, 0.28, 'sawtooth', 0.12), 120);
+    }
+
+    function playFanfare() {
+      if (!isSoundOn) return;
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((f, idx) => {
+        setTimeout(() => playTone(f, 0.35, 'triangle', 0.25), idx * 110);
+      });
+    }
+
+    function toggleSound() {
+      isSoundOn = !isSoundOn;
+      const btn = document.getElementById("soundToggleBtn");
+      btn.textContent = isSoundOn ? "🔊" : "🔇";
+      btn.title = isSoundOn ? "소리 켜짐" : "소리 꺼짐";
+    }
+
+    /* ================= 뷰 전환 제어 ================= */
+    function showView(viewName) {
+      document.getElementById("view-home").classList.add("hidden");
+      document.getElementById("view-quiz").classList.add("hidden");
+      document.getElementById("view-result").classList.add("hidden");
+
+      if (viewName === 'home') {
+        document.getElementById("view-home").classList.remove("hidden");
+        document.getElementById("quickStageSelect").value = "0";
+        updateHomeDashboard();
+      } else if (viewName === 'quiz') {
+        document.getElementById("view-quiz").classList.remove("hidden");
+      } else if (viewName === 'result') {
+        document.getElementById("view-result").classList.remove("hidden");
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goHome() {
+      showView('home');
+    }
+
+    function onQuickSelectChange(stageVal) {
+      const stageNum = parseInt(stageVal);
+      if (stageNum >= 1 && stageNum <= 5) {
+        startStage(stageNum);
+      } else {
+        goHome();
+      }
+    }
+
+    /* ================= 홈 대시보드 렌더링 ================= */
+    function updateHomeDashboard() {
+      const progress = getProgressData();
+      const container = document.getElementById("stageCardContainer");
+      container.innerHTML = "";
+
+      let totalClearedWords = 0;
+
+      STAGE_CONFIG.forEach(cfg => {
+        const stageProgress = progress[cfg.id];
+        const isDone = stageProgress && stageProgress.completed;
+        const bestScore = stageProgress ? stageProgress.score : 0;
+        if (isDone) {
+          totalClearedWords += 20;
+        }
+
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-2xl p-5 border border-slate-200 hover:border-teal-400 hover:shadow-md transition flex flex-col justify-between group relative overflow-hidden";
+        
+        card.innerHTML = `
+          ${isDone ? `<div class="absolute -right-3 -bottom-3 text-emerald-200 text-7xl select-none font-bold opacity-30 pointer-events-none">✓</div>` : ''}
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full ${isDone ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">
+                ${cfg.rangeText}
+              </span>
+              ${isDone ? `<span class="text-xs font-black text-emerald-600 flex items-center gap-1">🏆 ${bestScore}점 달성</span>` : '<span class="text-xs text-slate-400">도전 전</span>'}
+            </div>
+            <h4 class="text-base font-extrabold text-slate-900 group-hover:text-teal-700 transition mb-1">
+              ${cfg.title}
+            </h4>
+            <p class="text-xs text-slate-500 mb-4 line-clamp-1">
+              대표 낱말: ${cfg.wordsSample}
+            </p>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">20문항</span>
+            <button onclick="startStage(${cfg.id})" class="bg-teal-50 group-hover:bg-teal-600 text-teal-800 group-hover:text-white font-bold text-xs px-3.5 py-2 rounded-xl transition shadow-sm flex items-center gap-1">
+              <span>${isDone ? '다시 도전' : '탐험 시작'}</span>
+              <span>➔</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      // 전체 진행 바 갱신
+      const percent = Math.min(100, Math.round((totalClearedWords / 100) * 100));
+      document.getElementById("overallProgressText").textContent = `${totalClearedWords} / 100 단어 (${percent}%)`;
+      document.getElementById("overallProgressBar").style.width = `${percent}%`;
+    }
+
+    /* ================= 퀴즈 세션 제어 ================= */
+    function startStage(stageId) {
+      currentStageId = stageId;
+      document.getElementById("quickStageSelect").value = stageId.toString();
+
+      // 해당 단계 20개 단어 추출
+      const stageWords = ALL_WORDS.filter(w => w.stage === stageId);
+      // 보기 순서만 섞어서 준비
+      quizQuestionList = stageWords.map(q => {
+        return prepareShuffledQuestion(q);
+      });
+
+      currentQuestionIndex = 0;
+      currentScore = 0;
+      currentCombo = 0;
+      incorrectQuestions = [];
+
+      document.getElementById("quizStageBadge").textContent = `${stageId}단계 탐험`;
+      showView('quiz');
+      renderCurrentQuestion();
+    }
+
+    function prepareShuffledQuestion(rawQ) {
+      const correctWord = rawQ.options[rawQ.ans];
+      const shuffledOptions = [...rawQ.options].sort(() => Math.random() - 0.5);
+      const newAnsIndex = shuffledOptions.indexOf(correctWord);
+      return {
+        ...rawQ,
+        options: shuffledOptions,
+        ans: newAnsIndex
+      };
+    }
+
+    function renderCurrentQuestion() {
+      const q = quizQuestionList[currentQuestionIndex];
+      const total = quizQuestionList.length;
+
+      // 상단 헤더 업데이트
+      document.getElementById("quizCounterText").textContent = `문제 ${currentQuestionIndex + 1} / ${total}`;
+      document.getElementById("currentScoreText").textContent = currentScore;
+      const progressPercent = Math.round(((currentQuestionIndex + 1) / total) * 100);
+      document.getElementById("quizProgressBar").style.width = `${progressPercent}%`;
+
+      // 콤보 배지
+      const comboBadge = document.getElementById("comboBadge");
+      if (currentCombo >= 2) {
+        comboBadge.textContent = `🔥 ${currentCombo}연속 정답!`;
+        comboBadge.classList.remove("hidden");
+      } else {
+        comboBadge.classList.add("hidden");
+      }
+
+      // 문제 및 힌트 세팅
+      document.getElementById("questionTitle").textContent = q.q;
+      document.getElementById("hintTextContent").textContent = q.hint;
+      document.getElementById("hintBox").classList.add("hidden");
+      document.getElementById("hintBtnLabel").textContent = "생각 힌트 보기";
+
+      // 해설 피드백 박스 숨김
+      const expBox = document.getElementById("explanationBox");
+      expBox.classList.add("hidden");
+
+      // 보기 버튼 생성
+      const optionsContainer = document.getElementById("optionsContainer");
+      optionsContainer.innerHTML = "";
+
+      const optionLabels = ["①", "②", "③", "④"];
+      q.options.forEach((optText, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "opt-btn w-full p-4 text-left font-semibold text-slate-800 bg-slate-50 hover:bg-teal-50/70 border-2 border-slate-200 hover:border-teal-400 rounded-2xl transition flex items-center gap-3 group text-sm sm:text-base";
+        btn.innerHTML = `
+          <span class="w-7 h-7 flex items-center justify-center rounded-xl bg-white border border-slate-300 text-slate-600 font-bold group-hover:border-teal-400 group-hover:text-teal-700 transition">
+            ${optionLabels[idx]}
+          </span>
+          <span class="flex-1">${optText}</span>
+        `;
+        btn.onclick = () => selectOption(idx);
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function toggleHint() {
+      const hintBox = document.getElementById("hintBox");
+      const label = document.getElementById("hintBtnLabel");
+      const isHidden = hintBox.classList.contains("hidden");
+      if (isHidden) {
+        hintBox.classList.remove("hidden");
+        label.textContent = "힌트 접기";
+      } else {
+        hintBox.classList.add("hidden");
+        label.textContent = "생각 힌트 보기";
+      }
+    }
+
+    function selectOption(selectedIdx) {
+      const q = quizQuestionList[currentQuestionIndex];
+      const optBtns = document.querySelectorAll(".opt-btn");
+
+      // 모든 버튼 비활성화
+      optBtns.forEach(btn => btn.disabled = true);
+
+      const isCorrect = (selectedIdx === q.ans);
+
+      // 선택지 스타일 표시
+      optBtns.forEach((btn, idx) => {
+        if (idx === q.ans) {
+          btn.className = "w-full p-4 text-left font-bold text-emerald-950 bg-emerald-50 border-2 border-emerald-500 rounded-2xl flex items-center gap-3 text-sm sm:text-base";
+        } else if (idx === selectedIdx && !isCorrect) {
+          btn.className = "w-full p-4 text-left font-bold text-rose-950 bg-rose-50 border-2 border-rose-400 rounded-2xl flex items-center gap-3 text-sm sm:text-base";
+        } else {
+          btn.classList.add("opacity-50");
+        }
+      });
+
+      // 점수 및 콤보 판정
+      if (isCorrect) {
+        currentScore += 5;
+        currentCombo++;
+        playCorrectSound();
+      } else {
+        currentCombo = 0;
+        incorrectQuestions.push(q);
+        playIncorrectSound();
+      }
+
+      // 피드백 박스 노출
+      const expBox = document.getElementById("explanationBox");
+      const icon = document.getElementById("feedbackIcon");
+      const title = document.getElementById("feedbackTitle");
+      const meaning = document.getElementById("feedbackMeaning");
+      const example = document.getElementById("feedbackExample");
+
+      if (isCorrect) {
+        expBox.className = "rounded-2xl p-5 border border-emerald-200 bg-emerald-50/60 transition-all";
+        icon.textContent = "✨";
+        title.className = "text-base font-extrabold text-emerald-900";
+        title.textContent = `정답입니다! [${q.word}]`;
+      } else {
+        expBox.className = "rounded-2xl p-5 border border-rose-200 bg-rose-50/60 transition-all";
+        icon.textContent = "💡";
+        title.className = "text-base font-extrabold text-rose-900";
+        title.textContent = `아쉬워요! 정답은 '${q.options[q.ans]}'입니다.`;
+      }
+
+      meaning.textContent = `뜻풀이: ${q.meaning}`;
+      example.textContent = q.example;
+      expBox.classList.remove("hidden");
+    }
+
+    function nextQuestion() {
+      currentQuestionIndex++;
+      if (currentQuestionIndex < quizQuestionList.length) {
+        renderCurrentQuestion();
+      } else {
+        finishStageQuiz();
+      }
+    }
+
+    /* ================= 결과 화면 ================= */
+    function finishStageQuiz() {
+      showView('result');
+      const totalQ = quizQuestionList.length;
+      const finalScore = currentScore;
+      const perfectWordsCount = totalQ - incorrectQuestions.length;
+
+      document.getElementById("finalScoreVal").textContent = finalScore;
+
+      // 피드백 문구
+      let feedback = "";
+      if (finalScore === 100) {
+        feedback = "놀라워요! 20문제를 모두 완벽하게 맞혔습니다. 우리말 달인으로 임명합니다!";
+        playFanfare();
+        triggerConfetti();
+      } else if (finalScore >= 80) {
+        feedback = "참 잘했어요! 우리말의 고운 뜻을 아주 깊이 이해하고 있네요.";
+        playFanfare();
+      } else {
+        feedback = "수고 많았어요! 틀린 문제만 다시 풀어보며 단어를 차근차근 익혀보세요.";
+      }
+      document.getElementById("finalFeedbackMessage").textContent = feedback;
+
+      // 오답 다시 풀기 버튼 제어
+      const retryIncBtn = document.getElementById("retryIncorrectBtn");
+      if (incorrectQuestions.length > 0) {
+        retryIncBtn.classList.remove("hidden");
+        retryIncBtn.textContent = `📝 틀린 문제 ${incorrectQuestions.length}개만 다시 풀기`;
+      } else {
+        retryIncBtn.classList.add("hidden");
+      }
+
+      // 진행 상황 저장
+      saveStageProgress(currentStageId, finalScore, perfectWordsCount);
+    }
+
+    function retryCurrentStage() {
+      startStage(currentStageId);
+    }
+
+    function retryIncorrectOnly() {
+      if (incorrectQuestions.length === 0) return;
+      quizQuestionList = incorrectQuestions.map(q => prepareShuffledQuestion(q));
+      currentQuestionIndex = 0;
+      currentScore = 0;
+      currentCombo = 0;
+      incorrectQuestions = [];
+      showView('quiz');
+      renderCurrentQuestion();
+    }
+
+    /* ================= 캔버스 폭죽(컨페티) 효과 ================= */
+    function triggerConfetti() {
+      const canvas = document.getElementById("fireworksCanvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+
+      const particles = [];
+      const colors = ["#10b981", "#06b6d4", "#f59e0b", "#ec4899", "#8b5cf6"];
+
+      for (let i = 0; i < 60; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 9,
+          vy: (Math.random() - 0.7) * 9,
+          size: Math.random() * 6 + 3,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: 1
+        });
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let activeCount = 0;
+        particles.forEach(p => {
+          if (p.alpha > 0) {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.18; // 중력
+            p.alpha -= 0.015;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+            activeCount++;
+          }
+        });
+        if (activeCount > 0) {
+          requestAnimationFrame(render);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      render();
+    }
+
+    /* ================= 어휘 사전 모달 로직 ================= */
+    function openDictionaryModal() {
+      document.getElementById("dictModal").classList.remove("hidden");
+      renderDictionaryList(ALL_WORDS);
+    }
+
+    function closeDictionaryModal() {
+      document.getElementById("dictModal").classList.add("hidden");
+    }
+
+    function renderDictionaryList(list) {
+      const container = document.getElementById("dictWordList");
+      container.innerHTML = "";
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">일치하는 순우리말이 없습니다.</p>`;
+        return;
+      }
+      list.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "bg-slate-50 hover:bg-teal-50/50 p-3 rounded-xl border border-slate-200 transition text-xs sm:text-sm";
+        row.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-extrabold text-teal-900 text-sm sm:text-base">${item.word}</span>
+            <span class="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">${item.stage}단계 (${item.id}번)</span>
+          </div>
+          <p class="text-slate-800 font-medium mb-1">${item.meaning}</p>
+          <p class="text-slate-500 text-xs">예문: ${item.example}</p>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function filterDictionary(keyword) {
+      const query = keyword.trim().toLowerCase();
+      if (!query) {
+        renderDictionaryList(ALL_WORDS);
+        return;
+      }
+      const filtered = ALL_WORDS.filter(w => 
+        w.word.toLowerCase().includes(query) || 
+        w.meaning.toLowerCase().includes(query) ||
+        w.example.toLowerCase().includes(query)
+      );
+      renderDictionaryList(filtered);
+    }
+
+    /* ================= 초기 구동 및 URL 파라미터 연동 ================= */
+    window.addEventListener("DOMContentLoaded", () => {
+      updateHomeDashboard();
+
+      // URL 파라미터 확인 (?round=2 또는 ?stage=2)
+      const urlParams = new URLSearchParams(window.location.search);
+      const stageParam = urlParams.get("round") || urlParams.get("stage");
+
+      if (stageParam) {
+        const targetStage = parseInt(stageParam);
+        if (targetStage >= 1 && targetStage <= 5) {
+          startStage(targetStage);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
